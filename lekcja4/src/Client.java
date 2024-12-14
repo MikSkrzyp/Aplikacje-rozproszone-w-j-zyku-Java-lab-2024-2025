@@ -1,59 +1,33 @@
 import java.net.*;
 import java.io.*;
+import java.util.Scanner;
+
 public class Client {
-    public static void main(String args[]) {
-        Socket clientSocket = null;
-        try {
-            clientSocket = new Socket("localhost", 6666);
-        } catch (UnknownHostException e) {
-            System.out.println("Nieznany host.");
-            System.exit(-1);
-        } catch (ConnectException e) {
-            System.out.println("Połączenie odrzucone.");
-            System.exit(-1);
-        } catch (IOException e) {
-            System.out.println("Błąd wejścia-wyjścia: " + e);
-            System.exit(-1);
-        }
-        System.out.println("Połączono z " + clientSocket);
-        //deklaracje zmiennych strumieniowych
-        String line = null;
-        BufferedReader brSockInp = null;
-        BufferedReader brLocalInp = null;
-        DataOutputStream out = null;
-        //utworzenie strumieni
-        try {
-            out = new DataOutputStream(clientSocket.getOutputStream());
-            brSockInp = new BufferedReader(
-                    new InputStreamReader(
-                            clientSocket.getInputStream()));
-            brLocalInp = new BufferedReader(
-                    new InputStreamReader(System.in));
-        } catch (IOException e) {
-            System.out.println("Błąd przy tworzeniu strumieni: " + e);
-            System.exit(-1);
-        }
-        //pętla główna klienta
-        while (true) {
-            try {
-                line = brLocalInp.readLine();
-                if (line != null) {
-                    System.out.println("Wysyłam: " + line);
-                    out.writeBytes(line + '\n');
-                    out.flush();
+    public static void main(String[] args) {
+        try (Socket socket = new Socket("localhost", 6666);
+             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+             Scanner scanner = new Scanner(System.in)) {
+
+            System.out.println("Połączono z serwerem.");
+            System.out.println("Wprowadź dane w formacie: imie;nazwisko;rok_ur lub 'quit' aby zakończyć.");
+
+            String input;
+            while (true) {
+                System.out.print("Dane: ");
+                input = scanner.nextLine();
+
+                if ("quit".equalsIgnoreCase(input)) {
+                    System.out.println("Zakończenie pracy klienta.");
+                    break;
                 }
-                if (line == null || "quit".equals(line)) {
-                    System.out.println("Kończenie pracy...");
-                    clientSocket.close();
-                    System.exit(0);
-                }
-                line = brSockInp.readLine();
-                System.out.println("Otrzymano: " + line);
+
+                out.println(input);
+                String response = in.readLine();
+                System.out.println("Serwer: " + response);
             }
-            catch(IOException e){
-                System.out.println("Błąd wejścia-wyjścia: " + e);
-                System.exit(-1);
-            }
+        } catch (IOException e) {
+            System.out.println("Błąd połączenia: " + e.getMessage());
         }
     }
 }
